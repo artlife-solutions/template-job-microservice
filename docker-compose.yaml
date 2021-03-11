@@ -1,0 +1,23 @@
+#
+# Help
+#
+# Docs:
+# https://docs.docker.com/compose/compose-file
+#
+# The z/Z flags for volumes:
+# https://stackoverflow.com/a/35222815/25868
+#
+
+version: '3'
+services:
+    
+  rabbit:
+    image: rabbitmq:3-management
+    container_name: rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    expose:
+      - "5672"
+      - "15672"
+    restart: "no"

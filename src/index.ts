@@ -1,8 +1,4 @@
-if (process.env.NODE_ENV !== "production") {
-    require('dotenv').config();
-}
-
-import { IMicroJob, micro, IJob } from '@artlife/micro-job';
+import { IMicroJob, micro, IAssetJob } from '@artlife/micro-job';
 
 //
 // Defines a job to be processed.
@@ -20,28 +16,50 @@ export async function main(service: IMicroJob): Promise<void> {
     //
     // Register a function for processing jobs of this type.
     //
-    service.registerJob("my-job", async (service: IMicroJob, job: IJob<IJobPayload>) => {
+    await service.registerAssetJob({
+        jobName: "my-job", 
+        mimeType: "image",        
+        jobFn: async (service: IMicroJob, job: IAssetJob) => {
 
-        const payload: IJobPayload = job.payload; // The payload of your job.
+            // Unpack the details of the asset to be processed.
+            const { assetId, userId, accountId, mimeType } = job;
 
-        // Do the job!
-        // If this code completes sucessfully the job will be registered as completed.
-        // If this code throws an exception the job will be marked as errored.
+            //
+            // TODO: Add your code for the job here.
+            //
+            // If this code completes sucessfully the job will be registered as completed.
+            // If this code throws an exception the job will be marked as errored.
+
+            //
+            // Notify the application that something has happened.
+            //
+            await service.emit("my-message-to-the-world", {
+                // Message payload goes here.
+            });
+
+            //
+            // Emit metadata to be recorded by the application for this asset.
+            //
+            const metadata = {
+                // New metadata to for the asset goes here.
+            };
+            
+            await service.emit("update-metadata", {
+                asset: {
+                    assetId: assetId,
+                    accountId: accountId,
+                    metadata: metadata,
+                },
+            });
+        },
     });
 
     //
     // Watch the message bus for interesting messages.
     //
-    service.on("some-interesting-message", async (args, res) => {
+    await service.on("some-interesting-message", async (args, res) => {
 
-        const job = {
-            payload: {
-                // Payload for your job.
-            },
-        };
-
-        // Submit jobs to the job queue to be processed in turn.
-        await service.submitJobs("my-job", [ job ]);
+        // Respond to a message within the application.
 
         res.ack(); // Ack the message.
     });
@@ -50,12 +68,12 @@ export async function main(service: IMicroJob): Promise<void> {
 }
 
 if (require.main === module) {
-    const service = micro();
+    const service = micro({ serviceName: "my-job" });
     main(service)
         .then(() => console.log("Online"))
         .catch(err => {
             console.log("Failed to start!");
             console.log(err && err.stack || err);
-        })
+        });
 }
 
